@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+
+<head>
+	<title>Quiz</title>
+	<meta charset='utf-8' />
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<style>
+
+body {
+	background-color: #dddddd;
+}
+
+h1,h2,h4 {
+	text-align: center;
+}
+
+#navbar{
+  position:absolute;
+  left:0px;
+  right:0px;
+  top:0px;
+  height:50px;
+  display:flex;
+  align-items:center;
+  color:#ffffff;
+  background-color:#3c5a96;
+}
+
+#navHeader{
+  display:flex;
+  align-items:center;
+  height:100%;
+  font-size:32px;
+  padding:0px 30px 0px 30px;
+	cursor:pointer;
+  }
+
+.navDiv{
+  display:flex;
+  align-items:center;
+  height:100%;
+  font-size:24px;
+  padding:0px 30px 0px 30px;
+  cursor:pointer;
+}
+
+.navDiv:hover{
+    background-color:#cccccc;
+}
+
+#wrapper {
+	position:absolute;
+	left:0px;
+	right:0px;
+	top:50px;
+	bottom:0px;
+	background-color: #dddddd;
+}
+
+#messageDimmer {
+  position:absolute;
+  left:0px;
+  right:0px;
+  top:0px;
+  bottom:0px;
+  background-color:rgba(0, 0, 0, 0.7);
+  display:none;
+  justify-content:center;
+  align-items:center;
+}
+
+#messageBox {
+	border:2px solid;
+	padding:20px;
+	color:#ffffff;
+	background-color:#3c5a96;
+	font-size:20px;
+	font-weight:bold;
+	text-align: center;
+}
+
+#quizlist {
+	width: 600px;
+	top: 20px;
+	margin: auto;
+	padding-top: 50px;
+	padding-left: 80px;
+	padding-bottom: 50px;
+	min-height: 180px;
+	overflow: hidden;
+	background-color: #dddddd;
+	font-size: 30px;
+	text-align: center;
+}
+
+#output {
+	width: 600px;
+	top: 20px;
+	margin: auto;
+	padding-left: 80px;
+	padding-bottom: 50px;
+	background-color: #ffffff;
+}
+
+#submitbutton,#returnbutton {
+	display: none;
+	position: relative;
+	top: 0;
+	bottom: 0;
+	left: 45%;
+	right: 0;
+	width: 150px;
+	height: 50px;
+	margin: auto;
+	padding-top: 30px;
+	padding-bottom: 30px;
+	text-align: center;
+}
+
+#submit,#return {
+	background-color: #3c5a96;
+	color: white;
+	display: block;
+	height: 40px;
+	line-height: 40px;
+	text-decoration: none;
+	width: 150px;
+	text-align: center;
+}
+
+#stats {
+	position: absolute;
+	top: 10px;
+	right: 50px;
+	background-color: #ffffff;
+	width: 150px;
+	min-height: 100px;
+	overflow: hidden;
+	margin: auto;
+
+}
+
+</style>
+<body>
+	<div id="navbar">
+  <div id="navHeader" onclick="window.location.href='/'">WebbQuizen</div>
+		<div id="loginbutton"  class="navDiv navDivClick" onclick="showLogin()">Login</div>
+		<div id="logoutbutton" class="navDiv navDivClick" onclick="logout()">Logout</div>
+    <div id="signupbutton" class="navDiv navDivClick" onclick="showSignUp()">Sign Up</div>
+		<div id="nameDiv" class="navDiv navDivClick"></div>
+  </div>
+
+	<div id="wrapper">
+		<div id="intro"><h1>Välkommen till WebbQuizen!</h1><br><h2>Logga in för att få tillgång till fler quiz</div>
+		<div id="quizlist"></div>
+		<div id="output"></div>
+		<div id="stats"></div>
+		<div id="submitbutton">
+			<button id="submit" onclick="saveResults()">Submit</button>
+		</div>
+		<div id="returnbutton">
+			<button id="return" onclick="check()">Return</button>
+		</div>
+		<div id="messageDimmer"><div id="messageBox"></div></div>
+	</div>
+</body>
+
+<script>
+
+var result={};
+
+//Sends the user's answers to the server and the server responds with true or false (right or wrong) for each answer
+function saveResults(){
+
+	Object.keys(result).forEach(function(key) {
+		result[key]=document.getElementById(key).checked;
+	});
+
+	var xhr = new XMLHttpRequest();
+
+	xhr.open("POST", "/grade", true);
+
+	xhr.onreadystatechange = function(){
+
+		if(this.readyState == 4 && this.status == 200) {
+			submitbutton.style.display='none';
+			returnbutton.style.display='inline-block';
+			facit=JSON.parse(xhr.responseText);
+			for (x=0;x<facit.length;x++)
+				if (facit[x][1])
+					document.getElementById("rw"+facit[x][0]).innerHTML="&#10004;";
+				else
+					document.getElementById("rw"+facit[x][0]).innerHTML="&#10006;";
+		}
+	}
+
+	xhr.send(JSON.stringify(result));
+
+}
+
+//Gets a list of all quizs from the server
+function listQuiz(){
+
+	var xhr = new XMLHttpRequest();
+
+	xhr.open("GET", "/listquiz", true);
+
+	xhr.onreadystatechange = function(){
+
+		if(this.readyState == 4 && this.status == 200) {
+			output.style.display='none';
+			quizlist.style.display='block';
+			returnbutton.style.display='none';
+
+			var response=JSON.parse(xhr.responseText);
+			quizlist.innerHTML="";
+			for (x=0;x<response.length;x++){
+				quizlist.innerHTML+="<a href='#' onclick='getQuiz("+response[x].quiz_id+")'><b>"+response[x].name+"</b> ";
+				quizlist.innerHTML+=response[x].questions+" Questions<br></a>";
+			}
+		}
+	}
+	xhr.send();
+}
+
+//Takes a quiz_id as argument and gets a quiz from the server.
+function getQuiz(quiz){
+
+	result={};
+
+	var xhr = new XMLHttpRequest();
+
+	xhr.open("POST", "/getquiz", true);
+
+	xhr.onreadystatechange = function(){
+
+		if(this.readyState == 4 && this.status == 200) {
+			quizlist.style.display='none';
+			output.style.display='block';
+			stats.style.display='none';
+			submitbutton.style.display='inline-block';
+
+			var response=JSON.parse(xhr.responseText);
+
+			for (x=0;x<response.length;x++){
+
+			output.innerHTML+="<br><b>"+response[x][0][1]+"</b><br><br>";
+
+				for (i=0;i<response[x][1].length;i++){
+					checkboxID=response[x][0][0]+"_"+response[x][1][i][0];
+					output.innerHTML+='<input type="checkbox" id="'+checkboxID+'">'+response[x][1][i][1]+' <div style="display:inline" id="rw'+checkboxID+'"></div><br>';
+					result[checkboxID]=false;
+				}
+			}
+		}
+	}
+	xhr.send(quiz);
+}
+
+function showSignUp(){
+	showMessage('<h2>Sign up here!</h2><input id="user" type="text" placeholder="Username"><br><input id="password" type="password" placeholder="Password"><br><br>\
+				<button onclick="signup(user.value,password.value)">Submit</button>');
+}
+
+function signup(user,password){
+
+	showMessage('Connecting to server, please wait')
+
+	var xhr = new XMLHttpRequest();
+
+	xhr.open("POST", "/signup", true);
+
+	xhr.onreadystatechange = function(){
+
+		if(this.readyState == 4 && this.status == 200) {
+			if (xhr.responseText=="ok"){
+				hideMessage();
+				check();
+				}
+			if (xhr.responseText=="username taken"){
+				showMessage("Username already taken, try another one!<br><br><button onclick='hideMessage()'>OK</button>");
+				}
+		}
+	}
+	xhr.send(JSON.stringify({ 'user':user,'password':password }));
+}
+
+function showLogin(){
+	showMessage('<h2>Login here!</h2><input id="user" type="text" placeholder="Username"><br><input id="password" type="password" placeholder="Password"><br><br>\
+				<button onclick="login(user.value,password.value)">Login</button>');
+}
+
+function login(user,password){
+
+	showMessage('Please wait')
+	var xhr = new XMLHttpRequest();
+
+	xhr.open("POST", "/login", true);
+
+	xhr.onreadystatechange = function(){
+
+		if(this.readyState == 4 && this.status == 200) {
+			if (xhr.responseText=="ok"){
+				hideMessage();
+				check();
+				}
+			if (xhr.responseText=="error"){
+				showMessage("Wrong user name or password.<br><br><button onclick='hideMessage()'>OK</button>");
+				}
+		}
+	}
+	xhr.send(JSON.stringify({ 'user':user,'password':password }));
+
+}
+
+function logout(){
+	showMessage('Logging out..')
+
+	var xhr = new XMLHttpRequest();
+
+	xhr.open("GET", "/logout", true);
+
+	xhr.onreadystatechange = function(){
+
+		if(this.readyState == 4 && this.status == 200) {
+			if (xhr.responseText=="ok"){
+				hideMessage();
+				check();
+				}
+		}
+	}
+	xhr.send();
+}
+
+//Checks if the user is logged in. If the user is logged in the user name logged.
+function check(){
+
+	var xhr = new XMLHttpRequest();
+
+	xhr.open("GET", "/check", true);
+
+	xhr.onreadystatechange = function(){
+
+		if(this.readyState == 4 && this.status == 200) {
+			quizlist.innerHTML="";
+
+			if (xhr.responseText.length > 0) {
+				response=JSON.parse(xhr.responseText);
+				nameDiv.innerHTML=response.name;
+				nameDiv.style.display='flex';
+				loginbutton.style.display='none';
+				signupbutton.style.display='none';
+				logoutbutton.style.display='flex';
+				intro.style.display='none';
+				submitbutton.style.display='none';
+				stats.innerHTML="";
+				userStats(response.stats);
+				}
+			else {
+				nameDiv.innerHTML="";
+				nameDiv.style.display='none';
+				loginbutton.style.display='flex';
+				signupbutton.style.display='flex';
+				logoutbutton.style.display='none';
+				intro.style.display='block';
+				submitbutton.style.display='none';
+				stats.style.display='none';
+				}
+	  listQuiz();
+		}
+	}
+	xhr.send();
+}
+
+function userStats(text){
+	stats.style.display='block';
+	stats.innerHTML+="<h4>Poäng för senaste utförda quizer</h4>"
+	for (i = 0; i < text.length; i++)
+	stats.innerHTML+="<ul><li>"+text[i]+"/100</li></ul>"
+}
+
+function showMessage(text){
+  messageBox.innerHTML=text;
+  messageDimmer.style.display='flex';
+}
+
+function hideMessage(text){
+  messageDimmer.style.display='none';
+}
+
+//getQuiz();
+
+//listQuiz();
+
+//signup("Burt","123");
+
+check();
+
+//logout();
+
+</script>
+
+</html>
