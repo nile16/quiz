@@ -132,7 +132,7 @@ const server = http.createServer((req, res) => {
 
 				if (!rows[0]){
 
-					connection.query("INSERT INTO `users` ( name, password )  VALUES ( '"+post.user+"',SHA('"+post.password+"little salt') );SELECT LAST_INSERT_ID();", (error, rows, fields) => {
+					connection.query("INSERT INTO `users` ( name, password, stats )  VALUES ( '"+post.user+"',SHA('"+post.password+"little salt'),'[]' );SELECT LAST_INSERT_ID();", (error, rows, fields) => {
 
 						//Ask web browser to save cookie with token
 						res.setHeader('Set-Cookie', 'quiz_token='+tokenMaker(rows[1][0]['LAST_INSERT_ID()'],post.user)+'; httponly;');

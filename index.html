@@ -243,6 +243,8 @@ function getQuiz(quiz){
 
 			var response=JSON.parse(xhr.responseText);
 
+			output.innerHTML="";
+			
 			for (x=0;x<response.length;x++){
 
 			output.innerHTML+="<br><b>"+response[x][0][1]+"</b><br><br>";
